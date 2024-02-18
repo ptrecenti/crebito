@@ -54,7 +54,7 @@ class ConcurrentAccountSpec extends Specification {
         when:
         (1..numOfThreads).parallelStream().forEach {
             Thread.start {
-                bank.process(customer, new Bank.Transaction(amount, operation, description))
+                bank.process(customer, new Bank.Transaction(amount, operation as char, description))
             }
         }
 

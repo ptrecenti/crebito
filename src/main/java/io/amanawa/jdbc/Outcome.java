@@ -6,8 +6,6 @@ import java.sql.Statement;
 
 public interface Outcome<T> {
 
-    Outcome<Boolean> NOT_EMPTY = (rset, stmt) -> rset.next();
-
     Outcome<Void> VOID = (rset, stmt) -> Void.TYPE.cast(null);
 
     Mappings DEFAULT_MAPPINGS = new DefaultMappings();

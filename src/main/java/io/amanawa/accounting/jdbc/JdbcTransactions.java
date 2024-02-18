@@ -96,19 +96,4 @@ public final class JdbcTransactions implements Transactions {
             }
         }
     }
-
-    @Override
-    public Transactions filteredBy(long customerId) {
-        return new JdbcTransactions(session, sortBy, orderBy, limit, customerId);
-    }
-
-    @Override
-    public Transactions sortedBy(String field, String order) {
-        return new JdbcTransactions(session, field, order, limit, customerId);
-    }
-
-    @Override
-    public Transactions limitedTo(int limit) {
-        return new JdbcTransactions(session, sortBy, orderBy, limit, customerId);
-    }
 }
