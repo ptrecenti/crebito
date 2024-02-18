@@ -1,0 +1,143 @@
+plugins {
+    id 'application'
+    id 'idea'
+    id 'groovy'
+    id 'com.palantir.docker' version '0.35.0'
+    id 'org.graalvm.buildtools.native' version '0.10.0'
+}
+
+repositories {
+    mavenCentral()
+}
+
+group = 'io.amanawa.accounting'
+version = '1.0-SNAPSHOT'
+
+java {
+    toolchain {
+        languageVersion = JavaLanguageVersion.of(21)
+        vendor = JvmVendorSpec.GRAAL_VM
+    }
+}
+
+application {
+    mainClass = 'io.amanawa.rinha.Crebito'
+}
+
+graalvmNative {
+    agent {
+        defaultMode = "standard" // Default agent mode if one isn't specified using `-Pagent=mode_name`
+        enabled = false  // just enable to
+
+        modes {
+            // The standard agent mode generates metadata without conditions.
+            standard {
+            }
+        }
+
+        builtinCallerFilter = true
+        builtinHeuristicFilter = true
+        enableExperimentalPredefinedClasses = false
+        enableExperimentalUnsafeAllocationTracing = false
+        trackReflectionMetadata = true
+
+        // Copies metadata collected from tasks into the specified directories.
+        metadataCopy {
+            inputTaskNames.add("test") // Tasks previously executed with the agent attached.
+            outputDirectories.add("src/main/resources/META-INF/native-image")
+            mergeWithExisting = true // Instead of copying, merge with existing metadata in the output directories.
+        }
+    }
+
+    binaries {
+        main {
+            imageName = 'crebito' // The name of the native image, defaults to the project name
+            buildArgs.add("--verbose")
+            buildArgs.add("--static")
+            buildArgs.add("--libc=glibc") // or musl
+            buildArgs.add('--link-at-build-time')
+            buildArgs.add("-H:+AddAllCharsets")
+        }
+    }
+}
+
+jar {
+    doFirst {
+        manifest {
+            attributes([
+                    'Specification-Title'   : "${project.name}",
+                    'Specification-Version' : "${project.version}",
+                    'Implementation-Title'  : "${project.group}",
+                    'Implementation-Version': "${project.version}",
+                    'Main-Class'            : "${application.mainClass.get()}",
+                    'Class-Path'            : "${configurations.runtimeClasspath.files.collect { it.name }.join(' ')}",
+            ])
+        }
+    }
+}
+
+docker {
+    name 'ptrecenti/crebito'
+    copySpec.from('.').exclude(['**/build/*', '**/.idea/*', 'Dockerfile'])
+    noCache true
+}
+
+dependencies {
+
+    implementation 'com.fasterxml.jackson.jr:jackson-jr-all:2.16.1'
+    implementation 'com.fasterxml.jackson.jr:jackson-jr-annotation-support:2.16.1'
+    implementation('io.undertow:undertow-core:2.3.7.Final') {
+        exclude(module: 'xnio-api')
+        exclude(module: 'jboss-logging')
+    }
+    implementation 'com.zaxxer:HikariCP:5.1.0'
+
+    implementation('org.jboss.xnio:xnio-api:3.8.9.Final') {
+        exclude module: 'jboss-logging'
+        exclude module: 'jboss-threads'
+        exclude module: 'wildfly-common'
+    }
+    runtimeOnly 'org.postgresql:postgresql:42.6.0'
+    runtimeOnly 'org.jboss.logging:jboss-logging:3.5.3.Final'
+    runtimeOnly('org.jboss.threads:jboss-threads:3.5.0.Final') {
+        exclude module: 'jboss-logging'
+        exclude module: 'wildfly-common'
+    }
+    runtimeOnly 'org.wildfly.common:wildfly-common:1.6.0.Final'
+
+    runtimeOnly 'org.slf4j:slf4j-simple:1.7.36'
+    runtimeOnly 'io.dropwizard.metrics:metrics-core:4.2.25'
+    runtimeOnly 'io.dropwizard.metrics:metrics-healthchecks:4.2.25'
+    runtimeOnly 'io.micrometer:micrometer-core:1.12.2'
+    runtimeOnly 'org.osgi:org.osgi.framework:1.10.0'
+
+    testImplementation platform('org.apache.groovy:groovy-bom:4.0.18')
+    testImplementation platform('org.testcontainers:testcontainers-bom:1.19.5')
+    testImplementation platform('org.spockframework:spock-bom:2.4-M1-groovy-4.0')
+    testImplementation 'org.junit.platform:junit-platform-engine:1.10.0'
+    testImplementation 'org.apache.groovy:groovy-sql'
+    testImplementation('org.spockframework:spock-core') {
+        exclude module: 'groovy'
+        exclude module: 'junit-bom'
+    }
+    testImplementation('org.testcontainers:spock') {
+        exclude module: 'jackson-annotations'
+        exclude module: 'junit-bom'
+        exclude module: 'spock-core'
+        exclude module: 'groovy'
+    }
+    testImplementation('org.testcontainers:postgresql') {
+        exclude module: 'jackson-annotations'
+        exclude module: 'junit-bom'
+    }
+
+}
+
+test {
+    useJUnitPlatform()
+}
+
+wrapper {
+    gradleVersion = 8.6
+    distributionType = Wrapper.DistributionType.BIN
+}

@@ -1,0 +1,68 @@
+{
+  "resources": {
+    "includes": [
+      {
+        "pattern": "\\QMETA-INF/services/java.lang.System$LoggerFinder\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.net.spi.InetAddressResolverProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.net.spi.URLStreamHandlerProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.nio.channels.spi.SelectorProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.sql.Driver\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/java.util.spi.ResourceBundleControlProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.jboss.logging.LoggerProvider\\E"
+      },
+      {
+        "pattern": "\\QMETA-INF/services/org.xnio.XnioProvider\\E"
+      },
+      {
+        "pattern": "\\Qio/undertow/version.properties\\E"
+      },
+      {
+        "pattern": "\\Qorg/jboss/threads/Version.properties\\E"
+      },
+      {
+        "pattern": "\\Qorg/postgresql/driverconfig.properties\\E"
+      },
+      {
+        "pattern": "\\Qorg/slf4j/impl/StaticLoggerBinder.class\\E"
+      },
+      {
+        "pattern": "\\Qorg/xnio/Version.properties\\E"
+      },
+      {
+        "pattern": "\\Qorg/xnio/nio/Version.properties\\E"
+      },
+      {
+        "pattern": "\\Qsimplelogger.properties\\E"
+      },
+      {
+        "pattern": "java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfc.nrm\\E"
+      },
+      {
+        "pattern": "java.base:\\Qjdk/internal/icu/impl/data/icudt72b/nfkc.nrm\\E"
+      },
+      {
+        "pattern": "jdk.jfr:\\Qjdk/jfr/internal/query/view.ini\\E"
+      }
+    ]
+  },
+  "bundles": [
+    {
+      "name": "org.postgresql.translation.messages"
+    }
+  ]
+}
