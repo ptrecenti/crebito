@@ -6,6 +6,8 @@ import java.sql.Statement;
 
 public interface Outcome<T> {
 
+    Outcome<Integer> UPDATE_COUNT = (rset, stmt) -> stmt.getUpdateCount();
+
     Outcome<Void> VOID = (rset, stmt) -> Void.TYPE.cast(null);
 
     Mappings DEFAULT_MAPPINGS = new DefaultMappings();

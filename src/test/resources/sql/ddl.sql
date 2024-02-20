@@ -5,7 +5,7 @@ CREATE TABLE clientes
     limite INTEGER     NOT NULL
 );
 
-CREATE UNLOGGED TABLE transacoes
+CREATE TABLE transacoes
 (
     id           CHAR(32) PRIMARY KEY,
     cliente_id   INTEGER     NOT NULL,
@@ -22,23 +22,7 @@ CREATE TABLE saldos
     id         SERIAL PRIMARY KEY,
     cliente_id INTEGER NOT NULL,
     valor      INTEGER NOT NULL,
+    version    INTEGER,
     CONSTRAINT fk_clientes_saldos_id
         FOREIGN KEY (cliente_id) REFERENCES clientes (id)
 );
-
-DO
-$$
-    BEGIN
-        INSERT INTO clientes (nome, limite)
-        VALUES ('o barato sai caro', 1000 * 100),
-               ('zan corp ltda', 800 * 100),
-               ('les cruders', 10000 * 100),
-               ('padaria joia de cocaia', 100000 * 100),
-               ('kid mais', 5000 * 100);
-
-        INSERT INTO saldos (cliente_id, valor)
-        SELECT id, 0
-        FROM clientes;
-    END;
-$$;
-

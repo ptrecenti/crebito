@@ -7,6 +7,8 @@ services:
       - "/crebito"
       - "-Xms64m"
       - "-Xmx64m"
+      - "-Dlock.strategy=OPTIMIST"
+      - "-Dcustomers.cache.enabled=TRUE"
     hostname: api01
     ports:
       - "8081:8080"
@@ -17,6 +19,7 @@ services:
       - DB_NAME=rinha
       - DB_USER=rinha
       - DB_PASS=rinha
+      - DB_POOL_PLUS=1
     depends_on:
       db:
         condition: service_healthy

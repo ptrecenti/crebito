@@ -10,7 +10,7 @@ class TransactionSpec extends Specification {
     @Unroll
     def "Should Serialize"() {
         given:
-        Bank.Transaction transaction = Bank.Transaction.fromMap(JSON.std.mapFrom(new ByteArrayInputStream(payload.bytes)))
+        Transaction transaction = Transaction.fromMap(JSON.std.mapFrom(new ByteArrayInputStream(payload.bytes)))
 
         when:
         def valid = transaction.valid()

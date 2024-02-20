@@ -2,8 +2,8 @@ package io.amanawa.accounting.jdbc;
 
 import io.amanawa.accounting.Account;
 import io.amanawa.accounting.Customer;
-import io.amanawa.jdbc.JdbcSession;
 
+import javax.sql.DataSource;
 import java.util.Objects;
 
 public final class JdbcCustomer implements Customer {
@@ -11,9 +11,9 @@ public final class JdbcCustomer implements Customer {
     private final long id;
     private final Account account;
 
-    public JdbcCustomer(JdbcSession session, long id) {
+    public JdbcCustomer(DataSource source, long id) {
         this.id = id;
-        this.account = new JdbcAccount(session, id);
+        this.account = FeatureAccount.fromSystemProperties(source, id);
     }
 
     @Override

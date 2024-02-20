@@ -2,33 +2,28 @@ package io.amanawa.accounting.jdbc;
 
 import io.amanawa.accounting.Customer;
 import io.amanawa.accounting.Customers;
-import io.amanawa.cache.FixedSizeLruMap;
 import io.amanawa.jdbc.JdbcSession;
 import io.amanawa.jdbc.ListOutcome;
 
 import javax.sql.DataSource;
 import java.sql.SQLException;
-import java.util.Collections;
-import java.util.Map;
 
 public final class JdbcCustomers implements Customers {
 
-    private final Map<Long, Customer> cache;
     private final DataSource source;
     private final JdbcSession session;
     private final long filter;
     private final Object lock = new Object();
 
+
     public JdbcCustomers(DataSource source) {
-        this(source, Map.of(), 0L);
+        this(source, 0L);
     }
 
-    private JdbcCustomers(DataSource source, Map<Long, Customer> cache, long filter) {
+    private JdbcCustomers(DataSource source, long filter) {
         this.filter = filter;
         this.session = new JdbcSession(source);
         this.source = source;
-        this.cache = Collections.synchronizedMap(new FixedSizeLruMap<>(100));
-        this.cache.putAll(cache);
     }
 
     @Override
@@ -41,16 +36,7 @@ public final class JdbcCustomers implements Customers {
                                 where id = ?
                                 """)
                         .set(filter)
-                        .select(new ListOutcome<>(rset -> {
-                            final long id = rset.getLong(1);
-                            final Customer jdbcCustomer = new JdbcCustomer(new JdbcSession(source), id);
-                            if (this.cache.containsKey(id)) {
-                                return this.cache.get(id);
-                            } else {
-                                this.cache.put(id, jdbcCustomer);
-                            }
-                            return this.cache.get(id);
-                        }));
+                        .select(new ListOutcome<>(rset -> new JdbcCustomer(source, rset.getLong(1))));
             } catch (SQLException thrown) {
                 throw new IllegalStateException("fail to list customers.", thrown);
             }
@@ -59,6 +45,6 @@ public final class JdbcCustomers implements Customers {
 
     @Override
     public Customers filteredBy(long customerId) {
-        return new JdbcCustomers(source, cache, customerId);
+        return new JdbcCustomers(source, customerId);
     }
 }

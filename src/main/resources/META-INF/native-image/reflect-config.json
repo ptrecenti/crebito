@@ -120,7 +120,7 @@
     ]
   },
   {
-    "name": "io.amanawa.accounting.Account$Balance",
+    "name": "io.amanawa.accounting.Balance",
     "allDeclaredFields": true,
     "queryAllDeclaredMethods": true,
     "methods": [
@@ -143,44 +143,6 @@
     ]
   },
   {
-    "name": "io.amanawa.accounting.Account$Statement",
-    "allDeclaredFields": true,
-    "queryAllDeclaredMethods": true,
-    "methods": [
-      {
-        "name": "balance",
-        "parameterTypes": []
-      },
-      {
-        "name": "transactions",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
-    "name": "io.amanawa.accounting.Bank$Transaction",
-    "allDeclaredFields": true,
-    "queryAllDeclaredMethods": true,
-    "methods": [
-      {
-        "name": "amount",
-        "parameterTypes": []
-      },
-      {
-        "name": "description",
-        "parameterTypes": []
-      },
-      {
-        "name": "operation",
-        "parameterTypes": []
-      },
-      {
-        "name": "realizadaEm",
-        "parameterTypes": []
-      }
-    ]
-  },
-  {
     "name": "io.undertow.UndertowLogger_$logger",
     "methods": [
       {
@@ -195,7 +157,7 @@
     "name": "io.undertow.UndertowLogger_$logger_en"
   },
   {
-    "name": "io.undertow.UndertowLogger_$logger_en_US"
+    "name": "io.undertow.UndertowLogger_$logger_en_BR"
   },
   {
     "name": "io.undertow.server.ConnectorStatisticsImpl",
@@ -743,7 +705,7 @@
     "name": "org.jboss.threads.Messages_$logger_en"
   },
   {
-    "name": "org.jboss.threads.Messages_$logger_en_US"
+    "name": "org.jboss.threads.Messages_$logger_en_BR"
   },
   {
     "name": "org.postgresql.Driver"
@@ -834,7 +796,7 @@
     "name": "org.xnio._private.Messages_$logger_en"
   },
   {
-    "name": "org.xnio._private.Messages_$logger_en_US"
+    "name": "org.xnio._private.Messages_$logger_en_BR"
   },
   {
     "name": "org.xnio.management.XnioProviderMXBean",
@@ -863,7 +825,7 @@
     "name": "org.xnio.nio.Log_$logger_en"
   },
   {
-    "name": "org.xnio.nio.Log_$logger_en_US"
+    "name": "org.xnio.nio.Log_$logger_en_BR"
   },
   {
     "name": "org.xnio.nio.NioSocketConduit",

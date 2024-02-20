@@ -10,13 +10,13 @@ public interface Transactions {
      *
      * @param transaction to add.
      */
-    void add(Bank.Transaction transaction);
+    void add(Transaction transaction);
 
     /**
      * List set of transactions.
      *
      * @return an iterable list of transactions.
      */
-    Iterable<Bank.Transaction> iterate();
+    Iterable<Transaction> iterate();
 
 }

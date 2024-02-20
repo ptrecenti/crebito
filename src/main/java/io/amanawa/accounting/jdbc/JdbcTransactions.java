@@ -1,6 +1,6 @@
 package io.amanawa.accounting.jdbc;
 
-import io.amanawa.accounting.Bank;
+import io.amanawa.accounting.Transaction;
 import io.amanawa.accounting.Transactions;
 import io.amanawa.jdbc.JdbcSession;
 import io.amanawa.jdbc.ListOutcome;
@@ -48,7 +48,7 @@ public final class JdbcTransactions implements Transactions {
     }
 
     @Override
-    public void add(Bank.Transaction transaction) {
+    public void add(Transaction transaction) {
         synchronized (lock) {
             try {
                 session.sql("""
@@ -68,12 +68,12 @@ public final class JdbcTransactions implements Transactions {
         }
     }
 
-    private String key(Bank.Transaction transaction) {
+    private String key(Transaction transaction) {
         return new BigInteger(1, keyGenerator.digest(transaction.toString().getBytes(StandardCharsets.UTF_8))).toString(16);
     }
 
     @Override
-    public Iterable<Bank.Transaction> iterate() {
+    public Iterable<Transaction> iterate() {
         synchronized (lock) {
             try {
                 return session.sql("""
@@ -84,7 +84,7 @@ public final class JdbcTransactions implements Transactions {
                                 limit %s
                                 """.formatted(sortBy, orderBy, limit))
                         .set(customerId)
-                        .select(new ListOutcome<>(rset -> new Bank.Transaction(
+                        .select(new ListOutcome<>(rset -> new Transaction(
                                 Optional.of(rset.getLong(1)),
                                 rset.getLong(2),
                                 rset.getString(3).charAt(0),

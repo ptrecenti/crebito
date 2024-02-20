@@ -2,6 +2,7 @@ package io.amanawa.accounting.http;
 
 import com.fasterxml.jackson.jr.ob.JSON;
 import io.amanawa.accounting.Bank;
+import io.amanawa.accounting.Transaction;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.StatusCodes;
 
@@ -26,7 +27,7 @@ public final class BankRoutes {
     }
 
     public static void postTransaction(HttpServerExchange exchange, ExecutorService pool, JSON json, Bank bank) throws IOException {
-        final Bank.Transaction transaction = Bank.Transaction.fromMap(json.mapFrom(Channels.newInputStream(exchange.getRequestChannel())));
+        final Transaction transaction = Transaction.fromMap(json.mapFrom(Channels.newInputStream(exchange.getRequestChannel())));
         if (!transaction.valid()) {
             ApiRoutes.unprocessed(exchange);
             return;

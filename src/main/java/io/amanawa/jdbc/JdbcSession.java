@@ -1,8 +1,10 @@
 package io.amanawa.jdbc;
 
 import javax.sql.DataSource;
-import java.sql.*;
-import java.time.Instant;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedList;
@@ -239,109 +241,4 @@ public final class JdbcSession {
         return Objects.hash(source, connection);
     }
 
-    interface Request {
-
-        Request RUN = stmt -> {
-            stmt.execute();
-            return stmt.getGeneratedKeys();
-        };
-
-        Request RUN_QUERY = PreparedStatement::executeQuery;
-
-        Request RUN_UPDATE = stmt -> {
-            stmt.executeUpdate();
-            return stmt.getGeneratedKeys();
-        };
-
-        ResultSet fetch(PreparedStatement stmt) throws SQLException;
-    }
-
-    interface Connect {
-
-        PreparedStatement open(Connection conn) throws SQLException;
-
-        final class WithKeys implements Connect {
-            private final String sql;
-
-            public WithKeys(String sql) {
-                this.sql = sql;
-            }
-
-            @Override
-            public PreparedStatement open(Connection conn) throws SQLException {
-                return conn.prepareStatement(sql, Statement.RETURN_GENERATED_KEYS);
-            }
-        }
-
-        final class ConcurUpdateTable implements Connect {
-            private final String sql;
-
-            ConcurUpdateTable(final String query) {
-                this.sql = query;
-            }
-
-            @Override
-            public PreparedStatement open(final Connection conn) throws SQLException {
-                boolean isSupported = conn.getMetaData().supportsResultSetConcurrency(
-                        ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
-                if (!isSupported) {
-                    throw new IllegalStateException("Concurrency not supported");
-                }
-                return conn.prepareStatement(this.sql, ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_UPDATABLE);
-            }
-        }
-
-        final class Plain implements Connect {
-            private final String sql;
-
-            Plain(final String query) {
-                this.sql = query;
-            }
-
-            @Override
-            public PreparedStatement open(final Connection conn) throws SQLException {
-                return conn.prepareStatement(this.sql);
-            }
-        }
-    }
-
-    interface Preparation {
-        void prepare(PreparedStatement stmt) throws SQLException;
-    }
-
-    static final class PrepareArgs implements Preparation {
-
-        private final Collection<Object> args;
-
-        PrepareArgs(Collection<Object> args) {
-            this.args = Collections.unmodifiableCollection(args);
-        }
-
-        @Override
-        public void prepare(PreparedStatement stmt) throws SQLException {
-            int pos = 1;
-            for (final Object arg : this.args) {
-                if (arg == null) {
-                    stmt.setNull(pos, Types.NULL);
-                } else if (arg instanceof Long) {
-                    stmt.setLong(pos, (Long) arg);
-                } else if (arg instanceof Boolean) {
-                    stmt.setBoolean(pos, (Boolean) arg);
-                } else if (arg instanceof Date) {
-                    stmt.setDate(pos, (Date) arg);
-                } else if (arg instanceof Integer) {
-                    stmt.setInt(pos, (Integer) arg);
-                } else if (arg instanceof Instant) {
-                    stmt.setTimestamp(pos, Timestamp.from((Instant) arg));
-                } else if (arg instanceof Float) {
-                    stmt.setFloat(pos, (Float) arg);
-                } else if (arg instanceof byte[]) {
-                    stmt.setBytes(pos, (byte[]) arg);
-                } else {
-                    stmt.setObject(pos, arg);
-                }
-                ++pos;
-            }
-        }
-    }
 }

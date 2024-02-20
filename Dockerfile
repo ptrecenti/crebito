@@ -13,5 +13,6 @@ ENV SCALE_FACTOR="1" \
     DB_PASS="rinha" \
     DB_NAME="rinha" \
     DB_HOSTNAME="db" \
-    DB_PORT="5432"
-ENTRYPOINT ["/crebito","-Xms200m","-Xmx200m"]
+    DB_PORT="5432" \
+    DB_POOL_PLUS="1"
+ENTRYPOINT ["/crebito","-Xms200m","-Xmx200m","-Dlock.strategy=OPTIMIST","-Dcustomers.cache.enabled=true"]

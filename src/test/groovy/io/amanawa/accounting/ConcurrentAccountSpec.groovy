@@ -3,7 +3,8 @@ package io.amanawa.accounting
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import groovy.sql.Sql
-import io.amanawa.accounting.jdbc.JdbcCustomers
+import io.amanawa.accounting.jdbc.FeatureAccount
+import io.amanawa.accounting.jdbc.FeatureCustomers
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.spock.Testcontainers
 import spock.lang.Shared
@@ -26,7 +27,7 @@ class ConcurrentAccountSpec extends Specification {
             .withPassword("rinha")
 
     @Shared
-    HikariDataSource dataSource
+    HikariDataSource source
 
     @Shared
     Sql sql
@@ -39,36 +40,48 @@ class ConcurrentAccountSpec extends Specification {
         config.jdbcUrl = database.jdbcUrl
         config.username = database.username
         config.password = database.password
-        config.maximumPoolSize = 10
-        dataSource = new HikariDataSource(config)
+        config.maximumPoolSize = 16
+        source = new HikariDataSource(config)
 
 
-        bank = new Bank(new JdbcCustomers(dataSource))
-        sql = new Sql(dataSource)
-        sql.execute ConcurrentAccountSpec.class.getResourceAsStream('/sql/init.sql').text
+        sql = new Sql(source)
+        sql.execute ConcurrentAccountSpec.class.getResourceAsStream('/sql/ddl.sql').text
+        sql.execute ConcurrentAccountSpec.class.getResourceAsStream('/sql/dml.sql').text
     }
 
     @Unroll
     def "should correctly process transactions"() {
-        def numOfThreads = 100
+        given:
+        System.setProperty(FeatureAccount.LOCK_STRATEGY_PROP, strategy)
+        System.setProperty(FeatureCustomers.CUSTOMERS_CACHE_ENABLED_PROP, cache)
+        bank = new Bank(FeatureCustomers.fromSystemProperties(source))
+
         when:
         (1..numOfThreads).parallelStream().forEach {
             Thread.start {
-                bank.process(customer, new Bank.Transaction(amount, operation as char, description))
+                bank.process(customer, new Transaction(amount, operation as char, description))
             }
         }
 
         then:
         conditions.eventually {
-            def total = sql.firstRow("select sum(case when tipo = 'd' then (valor * -1) else valor end) as total from transacoes where cliente_id = $customer").total as long
+            def total = sql.firstRow("select coalesce(sum(case when tipo = 'd' then (valor * -1) else valor end),0) as total from transacoes where cliente_id = $customer").total as long
             assert bank.summary(customer).amount() == total
+            assert total != 0
+            assert source.getHikariPoolMXBean().getThreadsAwaitingConnection() <= 0
         }
 
 
         where:
-        customer | amount | operation   | description | processed | expectedSummary
-        1        | 10L    | 'c' as char | 'Credit'    | true      | new Account.Balance(50L, 100000L, Optional.empty())
-        2        | 1000L  | 'd' as char | 'Debit'     | true      | new Account.Balance(50L, 80000L, Optional.empty())
+        customer | amount  | operation   | description | numOfThreads | strategy    | cache
+        1        | 10L     | 'c' as char | 'Credit'    | 16           | 'OPTIMIST'  | 'false'
+        1        | 10L     | 'c' as char | 'Credit'    | 16           | 'OPTIMIST'  | 'true'
+        1        | 10L     | 'c' as char | 'Credit'    | 16           | 'PESSIMIST' | 'false'
+        1        | 10L     | 'c' as char | 'Credit'    | 16           | 'PESSIMIST' | 'true'
+        2        | 1000L   | 'd' as char | 'Debit'     | 16           | 'PESSIMIST' | 'false'
+        3        | 100000L | 'd' as char | 'Debit'     | 16           | 'OPTIMIST'  | 'false'
+        4        | 100L    | 'd' as char | 'Debit'     | 16           | 'OPTIMIST'  | 'true'
+        5        | 100L    | 'd' as char | 'Debit'     | 16           | 'PESSIMIST' | 'true'
 
     }
 }
