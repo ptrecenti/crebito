@@ -20,8 +20,9 @@ public interface Account {
      *
      * @param amount      to deposit.
      * @param description of the deposit.
+     * @return true when the deposit is successfully processed, otherwise false.
      */
-    void deposit(long amount, CharSequence description);
+    boolean deposit(long amount, CharSequence description);
 
     /**
      * Generates the account summary balance.

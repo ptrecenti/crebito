@@ -1,40 +1,39 @@
 package io.amanawa.accounting.jdbc;
 
-import io.amanawa.accounting.*;
+import io.amanawa.accounting.Account;
+import io.amanawa.accounting.Balance;
+import io.amanawa.accounting.Statement;
+import io.amanawa.accounting.Transactions;
 import io.amanawa.jdbc.JdbcSession;
 import io.amanawa.jdbc.SingleOutcome;
 
 import java.sql.SQLException;
 import java.time.Instant;
-import java.util.Collection;
 import java.util.Optional;
-import java.util.stream.StreamSupport;
 
 public final class ReadOnlyAccount implements Account {
 
+    private static final System.Logger log = System.getLogger(ReadOnlyAccount.class.getName());
     private final JdbcSession session;
     private final Transactions transactions;
     private final long customerId;
     private final Object lock = new Object();
 
-    public ReadOnlyAccount(JdbcSession session, Transactions transactions, long customerId) {
+    public ReadOnlyAccount(JdbcSession session, long customerId) {
         this.session = session;
-        this.transactions = transactions;
+        this.transactions = new JdbcTransactions(session, customerId);
         this.customerId = customerId;
     }
 
-
     @Override
     public boolean withdraw(long amount, CharSequence description) {
-        throw new UnsupportedOperationException("Choose optimistic or pessimist lock strategy");
+        throw new UnsupportedOperationException("Use the withdraw account");
     }
-
 
     @Override
-    public void deposit(long amount, CharSequence description) {
-        throw new UnsupportedOperationException("Choose optimistic or pessimist lock strategy");
+    public boolean deposit(long amount, CharSequence description) {
+        throw new UnsupportedOperationException("Use the deposit account");
     }
-
 
     @Override
     public Balance balance() {
@@ -46,12 +45,8 @@ public final class ReadOnlyAccount implements Account {
     public Statement statement() {
         return new Statement(
                 balance(Instant.now()),
-                topTransactions()
+                transactions.iterate()
         );
-    }
-
-    private Collection<Transaction> topTransactions() {
-        return StreamSupport.stream(transactions.iterate().spliterator(), false).toList();
     }
 
     private Balance balance(Instant when) {
@@ -73,5 +68,4 @@ public final class ReadOnlyAccount implements Account {
             }
         }
     }
-
 }

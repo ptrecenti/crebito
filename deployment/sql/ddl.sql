@@ -7,7 +7,7 @@ CREATE TABLE clientes
 
 CREATE TABLE transacoes
 (
-    id           CHAR(32) PRIMARY KEY,
+    id           SERIAL PRIMARY KEY,
     cliente_id   INTEGER     NOT NULL,
     valor        INTEGER     NOT NULL,
     tipo         CHAR(1)     NOT NULL,
@@ -16,6 +16,8 @@ CREATE TABLE transacoes
     CONSTRAINT fk_clientes_transacoes_id
         FOREIGN KEY (cliente_id) REFERENCES clientes (id)
 );
+ALTER TABLE transacoes
+    ADD CONSTRAINT uq_transacoes_group UNIQUE (cliente_id, valor, tipo, descricao, realizada_em);
 
 CREATE TABLE saldos
 (

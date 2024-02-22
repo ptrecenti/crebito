@@ -15,4 +15,4 @@ ENV SCALE_FACTOR="1" \
     DB_HOSTNAME="db" \
     DB_PORT="5432" \
     DB_POOL_PLUS="1"
-ENTRYPOINT ["/crebito","-Xms200m","-Xmx200m","-Dlock.strategy=OPTIMIST","-Dcustomers.cache.enabled=true"]
+ENTRYPOINT ["/crebito","-Xms200m","-Xmx200m"]

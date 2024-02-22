@@ -9,8 +9,9 @@ public interface Transactions {
      * Adds a new transaction.
      *
      * @param transaction to add.
+     * @return true when the transaction is added to the storage, otherwise false.
      */
-    void add(Transaction transaction);
+    boolean add(Transaction transaction);
 
     /**
      * List set of transactions.

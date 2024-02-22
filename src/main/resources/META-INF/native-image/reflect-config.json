@@ -143,6 +143,44 @@
     ]
   },
   {
+    "name": "io.amanawa.accounting.Statement",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "balance",
+        "parameterTypes": []
+      },
+      {
+        "name": "transactions",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
+    "name": "io.amanawa.accounting.Transaction",
+    "allDeclaredFields": true,
+    "queryAllDeclaredMethods": true,
+    "methods": [
+      {
+        "name": "amount",
+        "parameterTypes": []
+      },
+      {
+        "name": "description",
+        "parameterTypes": []
+      },
+      {
+        "name": "operation",
+        "parameterTypes": []
+      },
+      {
+        "name": "realizadaEm",
+        "parameterTypes": []
+      }
+    ]
+  },
+  {
     "name": "io.undertow.UndertowLogger_$logger",
     "methods": [
       {
@@ -932,15 +970,6 @@
     "fields": [
       {
         "name": "theUnsafe"
-      }
-    ]
-  },
-  {
-    "name": "sun.security.provider.MD5",
-    "methods": [
-      {
-        "name": "<init>",
-        "parameterTypes": []
       }
     ]
   },

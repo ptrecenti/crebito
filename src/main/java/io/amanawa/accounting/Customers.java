@@ -1,23 +1,37 @@
 package io.amanawa.accounting;
 
+import io.amanawa.accounting.jdbc.JdbcCustomer;
+import io.amanawa.cache.FixedSizeLruMap;
+
+import javax.sql.DataSource;
+import java.util.Map;
+
 /**
- * List of customers.
+ * Process the customer's transactions and collaborate with Account and Customers storage.
  */
-public interface Customers {
+public final class Customers {
+
+    private final Map<Long, Customer> customers;
+    private final DataSource source;
+    private final Object lock = new Object();
+    public Customers(DataSource source) {
+        this.customers = new FixedSizeLruMap<>(100);
+        this.source = source;
+    }
 
     /**
-     * List customers.
+     * Obtain a customer.
      *
-     * @return an iterable list of customers.
+     * @param customerId unique identifier
+     * @return a {@link Customer}
      */
-    Iterable<Customer> iterate();
-
-    /**
-     * Filters the list of customers by the customer id.
-     *
-     * @param customerId to filter the customer list.
-     * @return the Customers reference with the filter to apply.
-     */
-    Customers filteredBy(long customerId);
+    public Customer customer(long customerId) {
+        synchronized (lock) {
+            if (!this.customers.containsKey(customerId)) {
+                this.customers.put(customerId, new JdbcCustomer(source, customerId));
+            }
+            return this.customers.get(customerId);
+        }
+    }
 
 }

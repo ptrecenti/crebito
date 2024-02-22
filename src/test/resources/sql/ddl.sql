@@ -7,7 +7,7 @@ CREATE TABLE clientes
 
 CREATE TABLE transacoes
 (
-    id           CHAR(32) PRIMARY KEY,
+    id           SERIAL PRIMARY KEY,
     cliente_id   INTEGER     NOT NULL,
     valor        INTEGER     NOT NULL,
     tipo         CHAR(1)     NOT NULL,

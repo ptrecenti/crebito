@@ -82,17 +82,4 @@ public record Transaction(
     public boolean debit() {
         return 'd' == operation;
     }
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        Transaction that = (Transaction) o;
-        return amount == that.amount && operation == that.operation && Objects.equals(customerId, that.customerId) && Objects.equals(description, that.description) && Objects.equals(when, that.when);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(customerId, amount, operation, description, when);
-    }
 }

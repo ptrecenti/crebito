@@ -6,14 +6,10 @@ import io.amanawa.jdbc.JdbcSession;
 import io.amanawa.jdbc.ListOutcome;
 import io.amanawa.jdbc.Outcome;
 
-import java.math.BigInteger;
-import java.nio.charset.StandardCharsets;
-import java.security.MessageDigest;
-import java.security.NoSuchAlgorithmException;
 import java.sql.SQLException;
 import java.util.Optional;
 
-import static java.lang.System.Logger.Level.DEBUG;
+import static java.lang.System.Logger.Level.ERROR;
 
 public final class JdbcTransactions implements Transactions {
     private static final System.Logger log = System.getLogger(JdbcTransactions.class.getName());
@@ -22,7 +18,6 @@ public final class JdbcTransactions implements Transactions {
     private final String orderBy;
     private final int limit;
     private final long customerId;
-    private final MessageDigest keyGenerator;
     private final Object lock = new Object();
 
 
@@ -36,47 +31,35 @@ public final class JdbcTransactions implements Transactions {
         this.orderBy = orderBy;
         this.limit = limit;
         this.customerId = customerId;
-        this.keyGenerator = md5();
-    }
-
-    private static MessageDigest md5() {
-        try {
-            return MessageDigest.getInstance("MD5");
-        } catch (NoSuchAlgorithmException thrown) {
-            throw new IllegalStateException("Fail to create message digest", thrown);
-        }
     }
 
     @Override
-    public void add(Transaction transaction) {
+    public boolean add(Transaction transaction) {
         synchronized (lock) {
             try {
-                session.sql("""
-                                insert into transacoes (id,cliente_id,valor,tipo,descricao,realizada_em)
-                                values (?,?,?,?,?,?)""")
-                        .set(key(transaction))
+                int updates = session
+                        .sql("""
+                                insert into transacoes (cliente_id,valor,tipo,descricao)
+                                values (?,?,?,?)""")
                         .set(transaction.customerId().orElseThrow())
                         .set(transaction.amount())
                         .set(transaction.operation())
                         .set(transaction.description())
-                        .set(transaction.when().orElseThrow())
-                        .insert(Outcome.VOID);
-                log.log(DEBUG, "transaction added {0}", transaction);
+                        .update(Outcome.UPDATE_COUNT);
+                return updates > 0;
             } catch (SQLException thrown) {
-                throw new IllegalStateException("Fail to insert transaction", thrown);
+                log.log(ERROR, "Fail to add a transactions", thrown);
+                return false;
             }
         }
-    }
-
-    private String key(Transaction transaction) {
-        return new BigInteger(1, keyGenerator.digest(transaction.toString().getBytes(StandardCharsets.UTF_8))).toString(16);
     }
 
     @Override
     public Iterable<Transaction> iterate() {
         synchronized (lock) {
             try {
-                return session.sql("""
+                return session
+                        .sql("""
                                 select cliente_id,valor,tipo,descricao,realizada_em
                                 from transacoes
                                 where cliente_id = ?
