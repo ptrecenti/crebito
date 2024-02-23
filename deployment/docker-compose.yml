@@ -5,19 +5,20 @@ services:
     image: ptrecenti/crebito:latest
     entrypoint:
       - "/crebito"
-      - "-Xms88m"
-      - "-Xmx88m"
+      - "-Xms128m"
+      - "-Xmx128m"
       - "-ea"
       - "-server"
     hostname: api01
     environment:
-      - SCALE_FACTOR=3
+      - SCALE_FACTOR=8
       - DB_HOSTNAME=db
       - DB_PORT=5432
       - DB_NAME=rinha
       - DB_USER=rinha
       - DB_PASS=rinha
-      - DB_POOL_PLUS=100
+      - DB_POOL_PLUS=1
+      - MAX_POST=16
     depends_on:
       db:
         condition: service_healthy
@@ -26,8 +27,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.35"
-          memory: "88MB"
+          cpus: "0.3"
+          memory: "128MB"
 
   api02:
     <<: *api
@@ -49,11 +50,13 @@ services:
       resources:
         limits:
           cpus: "0.2"
-          memory: "34MB"
+          memory: "16MB"
 
   db:
     image: postgres:latest
     hostname: db
+    ports:
+      - "5432:5432"
     environment:
       - POSTGRES_PASSWORD=rinha
       - POSTGRES_USER=rinha
@@ -62,7 +65,7 @@ services:
       - ./sql/ddl.sql:/docker-entrypoint-initdb.d/ddl.sql
       - ./sql/dml.sql:/docker-entrypoint-initdb.d/dml.sql
     command: "postgres 
-      -c max_connections=300 
+      -c max_connections=300
       -c shared_buffers=96MB 
       -c effective_cache_size=288MB 
       -c maintenance_work_mem=24MB 
@@ -78,8 +81,8 @@ services:
     deploy:
       resources:
         limits:
-          cpus: "0.6"
-          memory: "320MB"
+          cpus: "0.5"
+          memory: "278MB"
     networks:
       - app-network
     healthcheck:

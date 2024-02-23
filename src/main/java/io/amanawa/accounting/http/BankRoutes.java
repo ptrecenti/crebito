@@ -1,9 +1,8 @@
 package io.amanawa.accounting.http;
 
 import com.fasterxml.jackson.jr.ob.JSON;
-import io.amanawa.accounting.Customer;
-import io.amanawa.accounting.sql.SqlCustomers;
-import io.amanawa.accounting.Transaction;
+import io.amanawa.accounting.Process;
+import io.amanawa.accounting.*;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.StatusCodes;
 
@@ -14,8 +13,8 @@ import java.util.List;
 
 public final class BankRoutes {
 
-    public static void getBalance(HttpServerExchange exchange, JSON json, SqlCustomers sqlCustomers) throws IOException {
-        final Customer customer = sqlCustomers.customer(extractCustomerId(exchange));
+    public static void getBalance(HttpServerExchange exchange, JSON json, Customers customers) throws IOException {
+        final Customer customer = customers.customer(extractCustomerId(exchange));
         if (customer.exists()) {
             exchange.setStatusCode(StatusCodes.OK);
             exchange.getResponseSender().send(json.asString(customer.account().statement()));
@@ -24,31 +23,24 @@ public final class BankRoutes {
         }
     }
 
-    public static void postTransaction(HttpServerExchange exchange, JSON json, SqlCustomers sqlCustomers) throws IOException {
-        final Transaction transaction = Transaction.fromMap(json.mapFrom(Channels.newInputStream(exchange.getRequestChannel())));
-        if (!transaction.valid()) {
-            ApiRoutes.unprocessed(exchange);
+    public static void postTransaction(HttpServerExchange exchange, JSON json, Bank bank) throws IOException {
+        final Transaction transaction = Transaction.fromMap(extractCustomerId(exchange),
+                json.mapFrom(Channels.newInputStream(exchange.getRequestChannel())));
+
+        final Process process = bank.process(transaction);
+
+        if (process.exists() && process.valid() && process.balance().isPresent()) {
+            exchange.setStatusCode(StatusCodes.OK);
+            exchange.getResponseSender().send(json.asString(process.balance().get()));
             return;
         }
-        int customerId = extractCustomerId(exchange);
-        final Customer customer = sqlCustomers.customer(customerId);
-        if (!customer.exists()) {
+
+        if (!process.exists()) {
             ApiRoutes.notFound(exchange);
             return;
         }
-        final boolean processed;
-        if (transaction.debit()) {
-            processed = customer.account().withdraw(transaction.amount(), transaction.description());
-        } else {
-            processed = customer.account().deposit(transaction.amount(), transaction.description());
-        }
 
-        if (processed) {
-            exchange.setStatusCode(StatusCodes.OK);
-            exchange.getResponseSender().send(json.asString(customer.account().balance()));
-        } else {
-            ApiRoutes.unprocessed(exchange);
-        }
+        ApiRoutes.unprocessed(exchange);
     }
 
 

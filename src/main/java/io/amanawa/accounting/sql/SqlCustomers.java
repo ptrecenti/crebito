@@ -1,6 +1,7 @@
 package io.amanawa.accounting.sql;
 
 import io.amanawa.accounting.Customer;
+import io.amanawa.accounting.Customers;
 import io.amanawa.jdbc.JdbcSession;
 
 import javax.sql.DataSource;
@@ -8,7 +9,7 @@ import javax.sql.DataSource;
 /**
  * Process the customer's transactions and collaborate with Account and Customers storage.
  */
-public final class SqlCustomers {
+public final class SqlCustomers implements Customers {
 
     private final DataSource source;
 
@@ -16,12 +17,7 @@ public final class SqlCustomers {
         this.source = source;
     }
 
-    /**
-     * Obtain a customer.
-     *
-     * @param customerId unique identifier
-     * @return a {@link Customer}
-     */
+    @Override
     public Customer customer(long customerId) {
         final JdbcSession session = new JdbcSession(source);
         return new SqlCustomer(session, new SqlTransactions(session, customerId), customerId);

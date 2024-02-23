@@ -20,6 +20,9 @@
         "pattern": "\\QMETA-INF/services/java.time.zone.ZoneRulesProvider\\E"
       },
       {
+        "pattern": "\\QMETA-INF/services/java.util.spi.ResourceBundleControlProvider\\E"
+      },
+      {
         "pattern": "\\QMETA-INF/services/org.jboss.logging.LoggerProvider\\E"
       },
       {
@@ -57,5 +60,9 @@
       }
     ]
   },
-  "bundles": []
+  "bundles": [
+    {
+      "name": "org.postgresql.translation.messages"
+    }
+  ]
 }

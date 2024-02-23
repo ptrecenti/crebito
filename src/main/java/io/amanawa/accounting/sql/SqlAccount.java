@@ -6,6 +6,8 @@ import io.amanawa.accounting.Statement;
 import io.amanawa.accounting.Transactions;
 import io.amanawa.jdbc.JdbcSession;
 
+import java.util.Optional;
+
 final class SqlAccount implements Account {
 
     private final Account readOnly;
@@ -13,14 +15,14 @@ final class SqlAccount implements Account {
     private final Account deposit;
     private final Object lock = new Object();
 
-    public SqlAccount(JdbcSession session, Transactions transaction, long customerId) {
-        this(new SqlReadOnlyAccount(session, transaction, customerId), transaction, session, customerId);
+    public SqlAccount(JdbcSession session, Transactions transactions, long customerId) {
+        this(new SqlReadOnlyAccount(session, transactions, customerId), transactions, session, customerId);
     }
 
     private SqlAccount(Account readOnly, Transactions transaction, JdbcSession session, long customerId) {
         this(readOnly,
                 new SqlWithdrawAccount(readOnly, transaction, session, customerId),
-                new SqlDepositAccount(readOnly, transaction, session, customerId));
+                new RetryDepositAccount(new SqlDepositAccount(readOnly, transaction, session, customerId)));
     }
 
     private SqlAccount(Account readOnly, Account withdraw, Account deposit) {
@@ -30,14 +32,14 @@ final class SqlAccount implements Account {
     }
 
     @Override
-    public boolean withdraw(long amount, CharSequence description) {
+    public Optional<Balance> withdraw(long amount, CharSequence description) {
         synchronized (lock) {
             return withdraw.withdraw(amount, description);
         }
     }
 
     @Override
-    public boolean deposit(long amount, CharSequence description) {
+    public Optional<Balance> deposit(long amount, CharSequence description) {
         synchronized (lock) {
             return deposit.deposit(amount, description);
         }

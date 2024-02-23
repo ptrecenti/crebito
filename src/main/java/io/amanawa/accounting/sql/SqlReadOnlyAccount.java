@@ -13,6 +13,7 @@ import java.util.Optional;
 
 final class SqlReadOnlyAccount implements Account {
 
+    private static final System.Logger logger = System.getLogger(SqlReadOnlyAccount.class.getName());
     private final JdbcSession session;
     private final Transactions transactions;
     private final long customerId;
@@ -22,16 +23,6 @@ final class SqlReadOnlyAccount implements Account {
         this.session = session;
         this.transactions = transactions;
         this.customerId = customerId;
-    }
-
-    @Override
-    public boolean withdraw(long amount, CharSequence description) {
-        throw new UnsupportedOperationException("Use the withdraw account");
-    }
-
-    @Override
-    public boolean deposit(long amount, CharSequence description) {
-        throw new UnsupportedOperationException("Use the deposit account");
     }
 
     @Override
@@ -56,7 +47,7 @@ final class SqlReadOnlyAccount implements Account {
         synchronized (lock) {
             try {
                 return session.sql("""
-                                select s.valor, c.limite, s.version
+                                select s.valor, c.limite, s.versao
                                 from saldos s inner join clientes c on c.id = s.cliente_id
                                 where s.cliente_id = ?""")
                         .set(customerId)
@@ -67,7 +58,8 @@ final class SqlReadOnlyAccount implements Account {
                                 Optional.of(rset.getInt(3)))
                                 , false));
             } catch (SQLException thrown) {
-                throw new IllegalStateException("fail to list customers.", thrown);
+                logger.log(System.Logger.Level.WARNING, "Fail to get balance.", thrown);
+                return Balance.empty;
             }
         }
     }

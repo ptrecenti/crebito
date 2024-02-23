@@ -5,17 +5,16 @@ import com.fasterxml.jackson.annotation.JsonProperty;
 
 import java.time.Instant;
 import java.util.Map;
-import java.util.Objects;
 import java.util.Optional;
 
 /**
- * Bank transaction holds information about request and processed transactions.
+ * Bank transaction holds information about request and valid transactions.
  *
- * @param customerId  of who is requesting the transaction. It's present when the transaction is processed.
+ * @param customerId  of who is requesting the transaction. It's present when the transaction is valid.
  * @param amount      of the transaction.
  * @param operation   type of the transaction.
  * @param description of the transaction.
- * @param when        the transaction was realized. It's present when the transaction is processed.
+ * @param when        the transaction was realized. It's present when the transaction is valid.
  */
 public record Transaction(
         @JsonIgnore
@@ -26,20 +25,22 @@ public record Transaction(
         char operation,
         @JsonProperty("descricao")
         CharSequence description,
-
-        Optional<Instant> when) {
+        Optional<Instant> when,
+        Optional<Integer> version) {
     public Transaction(
+            long customerId,
             @JsonProperty("valor")
             long amount,
             @JsonProperty("tipo")
             char operation,
             @JsonProperty("descricao")
             CharSequence description) {
-        this(Optional.empty(), amount, operation, description, Optional.empty());
+        this(Optional.of(customerId), amount, operation, description, Optional.empty(), Optional.empty());
     }
 
-    public static Transaction fromMap(Map<String, Object> map) {
+    public static Transaction fromMap(long customerId, Map<String, Object> map) {
         return new Transaction(
+                customerId,
                 parseAmount(map),
                 map.getOrDefault("tipo", '\0').toString().charAt(0),
                 Optional.ofNullable(map.getOrDefault("descricao", "")).orElse("").toString()

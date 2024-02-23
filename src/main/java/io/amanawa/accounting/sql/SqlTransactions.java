@@ -7,9 +7,12 @@ import io.amanawa.jdbc.ListOutcome;
 import io.amanawa.jdbc.Outcome;
 
 import java.sql.SQLException;
+import java.util.List;
 import java.util.Optional;
 
 public final class SqlTransactions implements Transactions {
+
+    private static final System.Logger logger = System.getLogger(SqlTransactions.class.getName());
     private final JdbcSession session;
     private final String sortBy;
     private final String orderBy;
@@ -35,15 +38,16 @@ public final class SqlTransactions implements Transactions {
         synchronized (lock) {
             try {
                 session.sql("""
-                                insert into transacoes (cliente_id,valor,tipo,descricao)
-                                values (?,?,?,?)""")
+                                insert into transacoes (cliente_id,valor,tipo,descricao,versao)
+                                values (?,?,?,?,?)""")
                         .set(transaction.customerId().orElseThrow())
                         .set(transaction.amount())
                         .set(transaction.operation())
                         .set(transaction.description())
+                        .set(transaction.version().orElseThrow())
                         .insert(Outcome.VOID);
             } catch (SQLException thrown) {
-                throw new IllegalStateException("Fail to add a transactions", thrown);
+                logger.log(System.Logger.Level.ERROR, "Fail to add a transactions", thrown);
             }
         }
     }
@@ -66,10 +70,12 @@ public final class SqlTransactions implements Transactions {
                                 rset.getLong(2),
                                 rset.getString(3).charAt(0),
                                 rset.getString(4),
-                                Optional.of(rset.getTimestamp(5).toInstant())
-                        )));
+                                Optional.of(rset.getTimestamp(5).toInstant()),
+                                Optional.empty())
+                        ));
             } catch (SQLException thrown) {
-                throw new IllegalStateException("Fail to iterate on transactions", thrown);
+                logger.log(System.Logger.Level.WARNING, "Fail to iterate on transactions", thrown);
+                return List.of();
             }
         }
     }

@@ -519,6 +519,14 @@
     "name": "java.security.SecureRandomParameters"
   },
   {
+    "name": "java.sql.SQLException",
+    "fields": [
+      {
+        "name": "next"
+      }
+    ]
+  },
+  {
     "name": "java.util.Date"
   },
   {
@@ -970,6 +978,14 @@
     "fields": [
       {
         "name": "theUnsafe"
+      }
+    ],
+    "methods": [
+      {
+        "name": "invokeCleaner",
+        "parameterTypes": [
+          "java.nio.ByteBuffer"
+        ]
       }
     ]
   },

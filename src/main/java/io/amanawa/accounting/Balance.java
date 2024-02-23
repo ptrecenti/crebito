@@ -19,6 +19,12 @@ public record Balance(
         Optional<Instant> when,
         Optional<Integer> version) {
 
+    public static final Balance empty = new Balance();
+
+    public Balance() {
+        this(0, 0, Optional.empty(), Optional.empty());
+    }
+
     @JsonProperty("data_extrato")
     public String data() {
         return when.map(Instant::toString).orElse(null);

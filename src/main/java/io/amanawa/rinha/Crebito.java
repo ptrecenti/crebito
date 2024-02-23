@@ -4,13 +4,16 @@ import com.fasterxml.jackson.jr.annotationsupport.JacksonAnnotationExtension;
 import com.fasterxml.jackson.jr.ob.JSON;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import io.amanawa.accounting.sql.SqlCustomers;
+import io.amanawa.accounting.Bank;
+import io.amanawa.accounting.Customers;
 import io.amanawa.accounting.http.StatementHttpHandler;
 import io.amanawa.accounting.http.TransactionHttpHandler;
+import io.amanawa.accounting.sql.SqlCustomers;
 import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.RoutingHandler;
+import io.undertow.server.handlers.RequestLimit;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -21,9 +24,10 @@ public class Crebito {
     public static void main(String[] args) {
         int scale = Integer.parseInt(System.getenv().getOrDefault("SCALE_FACTOR", "1"));
         int ioThreads = Math.max(Runtime.getRuntime().availableProcessors(), 2) * scale;
-        int workerThreads = ioThreads * 8 * scale;
-        int dbPool = workerThreads + 6 + Integer.parseInt(System.getenv().getOrDefault("DB_POOL_PLUS", "1"));
-        int minIdle = Math.max(workerThreads / 2, 2);
+        int workerThreads = ioThreads * 8;
+        int dbPool = workerThreads + Integer.parseInt(System.getenv().getOrDefault("DB_POOL_PLUS", "1"));
+        int minIdle = dbPool - 5;
+        int maxPostConcurrentTransactions = Integer.parseInt(System.getenv().getOrDefault("MAX_POST", "100"));
         final HikariConfig config = new HikariConfig();
         config.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
         config.setUsername(System.getenv().getOrDefault("DB_USER", "rinha"));
@@ -39,11 +43,11 @@ public class Crebito {
 
         final JSON json = JSON.builder().register(JacksonAnnotationExtension.std).build();
 
-        final SqlCustomers sqlCustomers = new SqlCustomers(source);
-
+        final Customers customers = new SqlCustomers(source);
+        final Bank bank = new Bank(customers);
         final RoutingHandler routes = Handlers.routing()
-                .post("/clientes/{id}/transacoes", new TransactionHttpHandler(json, sqlCustomers))
-                .get("/clientes/{id}/extrato", new StatementHttpHandler(json, sqlCustomers));
+                .post("/clientes/{id}/transacoes", Handlers.requestLimitingHandler(new RequestLimit(maxPostConcurrentTransactions),new TransactionHttpHandler(json, bank)))
+                .get("/clientes/{id}/extrato", Handlers.disableCache(new StatementHttpHandler(json, customers)));
 
         Undertow.builder()
                 .addHttpListener(8080, "0.0.0.0")

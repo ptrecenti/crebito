@@ -1,6 +1,9 @@
 package io.amanawa.accounting.sql;
 
-import io.amanawa.accounting.*;
+import io.amanawa.accounting.Account;
+import io.amanawa.accounting.Balance;
+import io.amanawa.accounting.Transaction;
+import io.amanawa.accounting.Transactions;
 import io.amanawa.jdbc.JdbcSession;
 import io.amanawa.jdbc.Outcome;
 
@@ -10,6 +13,7 @@ import java.util.Optional;
 
 final class SqlWithdrawAccount implements Account {
 
+    private static final System.Logger logger = System.getLogger(SqlWithdrawAccount.class.getName());
     private final JdbcSession session;
     private final Transactions transactions;
     private final long customerId;
@@ -24,52 +28,42 @@ final class SqlWithdrawAccount implements Account {
     }
 
     @Override
-    public boolean withdraw(long amount, CharSequence description) {
+    public Optional<Balance> withdraw(long amount, CharSequence description) {
         synchronized (lock) {
             try {
-                final Balance balance = balance();
-                if (balance.amount() + balance.limit() - amount >= 0) {
+                final Balance initial = readOnly.balance();
+                if (initial.amount() + initial.limit() - amount >= 0) {
+                    int actualVersion = initial.version().orElseThrow();
+                    int newVersion = actualVersion + 1;
+                    long newBalance = initial.amount() - amount;
                     final boolean processed = session
                             .sql("""
                                     update saldos set
                                     valor = ?,
-                                    version = ?
+                                    versao = ?
                                     where cliente_id = ?
-                                    and version = ?""")
-                            .set(balance.amount() - amount)
-                            .set(balance.version().orElseThrow() + 1)
+                                    and versao = ?""")
+                            .set(newBalance)
+                            .set(newVersion)
                             .set(customerId)
-                            .set(balance.version().orElseThrow())
+                            .set(actualVersion)
                             .update(Outcome.UPDATE_COUNT) > 0;
                     if (processed) {
-                        transactions.add(new Transaction(Optional.of(customerId), amount, 'd', description, Optional.of(Instant.now())));
+                        transactions.add(new Transaction(Optional.of(customerId), amount, 'd', description, Optional.of(Instant.now()), Optional.of(newVersion)));
+                        return Optional.of(new Balance(
+                                newBalance,
+                                initial.limit(),
+                                initial.when(),
+                                Optional.of(newVersion)
+                        ));
                     }
-                    return processed;
+
                 }
-                return false;
+                return Optional.empty();
             } catch (SQLException thrown) {
-                throw new IllegalStateException("Fail to optimistic lock withdraw", thrown);
+                logger.log(System.Logger.Level.WARNING, "Fail to optimistic lock withdraw.", thrown);
+                return Optional.empty();
             }
-        }
-    }
-
-    @Override
-    public boolean deposit(long amount, CharSequence description) {
-        throw new UnsupportedOperationException("Use the deposit account");
-    }
-
-    @Override
-    public Balance balance() {
-        synchronized (lock) {
-            return this.readOnly.balance();
-        }
-    }
-
-
-    @Override
-    public Statement statement() {
-        synchronized (lock) {
-            return this.readOnly.statement();
         }
     }
 
