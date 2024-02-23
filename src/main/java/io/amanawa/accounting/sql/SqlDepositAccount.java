@@ -1,4 +1,4 @@
-package io.amanawa.accounting.jdbc;
+package io.amanawa.accounting.sql;
 
 import io.amanawa.accounting.*;
 import io.amanawa.jdbc.JdbcSession;
@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Optional;
 
-public final class DepositAccount implements Account {
+final class SqlDepositAccount implements Account {
 
     private final JdbcSession session;
     private final Transactions transactions;
@@ -16,10 +16,10 @@ public final class DepositAccount implements Account {
     private final long customerId;
     private final Object lock = new Object();
 
-    public DepositAccount(Account readOnly, JdbcSession session, long customerId) {
+    SqlDepositAccount(Account readOnly, Transactions transactions, JdbcSession session, long customerId) {
         this.readOnly = readOnly;
         this.session = session;
-        this.transactions = new JdbcTransactions(session, customerId);
+        this.transactions = transactions;
         this.customerId = customerId;
     }
 
@@ -33,9 +33,7 @@ public final class DepositAccount implements Account {
         synchronized (lock) {
             try {
                 final Balance balance = balance();
-                boolean processed = false;
-                final int updateCount = session
-                        .autoCommit(false)
+                final boolean processed = session
                         .sql("""
                                 update saldos set
                                 valor = ?,
@@ -46,41 +44,30 @@ public final class DepositAccount implements Account {
                         .set(balance.version().orElseThrow() + 1)
                         .set(customerId)
                         .set(balance.version().orElseThrow())
-                        .update(Outcome.UPDATE_COUNT);
-                if (updateCount > 0) {
-                    final boolean added = transactions.add(new Transaction(Optional.of(customerId), amount, 'c', description, Optional.of(Instant.now())));
-                    if (added) {
-                        processed = true;
-                    }
-                }
+                        .update(Outcome.UPDATE_COUNT) > 0;
                 if (processed) {
-                    session.commit();
-                } else {
-                    session.rollback();
+                    transactions.add(new Transaction(Optional.of(customerId), amount, 'c', description, Optional.of(Instant.now())));
                 }
                 return processed;
             } catch (SQLException thrown) {
-                try {
-                    session.rollback();
-                } catch (SQLException nothingToDo) {
-                    throw new IllegalStateException("There is nothing to do here", nothingToDo);
-                }
                 throw new IllegalStateException("Fail to optimistic lock deposit", thrown);
-            }finally {
-                session.autoCommit(true);
             }
         }
     }
 
     @Override
     public Balance balance() {
-        return this.readOnly.balance();
+        synchronized (lock) {
+            return this.readOnly.balance();
+        }
     }
 
 
     @Override
     public Statement statement() {
-        return this.readOnly.statement();
+        synchronized (lock) {
+            return this.readOnly.statement();
+        }
     }
 
 

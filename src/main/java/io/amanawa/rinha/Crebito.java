@@ -4,7 +4,7 @@ import com.fasterxml.jackson.jr.annotationsupport.JacksonAnnotationExtension;
 import com.fasterxml.jackson.jr.ob.JSON;
 import com.zaxxer.hikari.HikariConfig;
 import com.zaxxer.hikari.HikariDataSource;
-import io.amanawa.accounting.Customers;
+import io.amanawa.accounting.sql.SqlCustomers;
 import io.amanawa.accounting.http.StatementHttpHandler;
 import io.amanawa.accounting.http.TransactionHttpHandler;
 import io.undertow.Handlers;
@@ -39,11 +39,11 @@ public class Crebito {
 
         final JSON json = JSON.builder().register(JacksonAnnotationExtension.std).build();
 
-        final Customers customers = new Customers(source);
+        final SqlCustomers sqlCustomers = new SqlCustomers(source);
 
         final RoutingHandler routes = Handlers.routing()
-                .post("/clientes/{id}/transacoes", new TransactionHttpHandler(json, customers))
-                .get("/clientes/{id}/extrato", new StatementHttpHandler(json, customers));
+                .post("/clientes/{id}/transacoes", new TransactionHttpHandler(json, sqlCustomers))
+                .get("/clientes/{id}/extrato", new StatementHttpHandler(json, sqlCustomers));
 
         Undertow.builder()
                 .addHttpListener(8080, "0.0.0.0")

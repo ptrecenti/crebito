@@ -3,6 +3,7 @@ package io.amanawa.accounting
 import com.zaxxer.hikari.HikariConfig
 import com.zaxxer.hikari.HikariDataSource
 import groovy.sql.Sql
+import io.amanawa.accounting.sql.SqlCustomers
 import org.testcontainers.containers.PostgreSQLContainer
 import org.testcontainers.spock.Testcontainers
 import spock.lang.Shared
@@ -14,7 +15,7 @@ import spock.util.concurrent.PollingConditions
 class ConcurrentAccountSpec extends Specification {
 
     @Shared
-    Customers customers
+    SqlCustomers customers
 
     @Shared
     PostgreSQLContainer database = new PostgreSQLContainer("postgres:latest")
@@ -43,7 +44,7 @@ class ConcurrentAccountSpec extends Specification {
         config.setTransactionIsolation("TRANSACTION_READ_COMMITTED")
 
         source = new HikariDataSource(config)
-        customers = new Customers(source)
+        customers = new SqlCustomers(source)
 
         sql = new Sql(source)
         sql.execute ConcurrentAccountSpec.class.getResourceAsStream('/sql/ddl.sql').text

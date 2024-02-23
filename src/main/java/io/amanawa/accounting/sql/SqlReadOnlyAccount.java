@@ -1,4 +1,4 @@
-package io.amanawa.accounting.jdbc;
+package io.amanawa.accounting.sql;
 
 import io.amanawa.accounting.Account;
 import io.amanawa.accounting.Balance;
@@ -11,17 +11,16 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Optional;
 
-public final class ReadOnlyAccount implements Account {
+final class SqlReadOnlyAccount implements Account {
 
-    private static final System.Logger log = System.getLogger(ReadOnlyAccount.class.getName());
     private final JdbcSession session;
     private final Transactions transactions;
     private final long customerId;
     private final Object lock = new Object();
 
-    public ReadOnlyAccount(JdbcSession session, long customerId) {
+    SqlReadOnlyAccount(JdbcSession session, Transactions transactions, long customerId) {
         this.session = session;
-        this.transactions = new JdbcTransactions(session, customerId);
+        this.transactions = transactions;
         this.customerId = customerId;
     }
 
@@ -37,16 +36,20 @@ public final class ReadOnlyAccount implements Account {
 
     @Override
     public Balance balance() {
-        return balance(null);
+        synchronized (lock) {
+            return balance(null);
+        }
     }
 
 
     @Override
     public Statement statement() {
-        return new Statement(
-                balance(Instant.now()),
-                transactions.iterate()
-        );
+        synchronized (lock) {
+            return new Statement(
+                    balance(Instant.now()),
+                    transactions.iterate()
+            );
+        }
     }
 
     private Balance balance(Instant when) {

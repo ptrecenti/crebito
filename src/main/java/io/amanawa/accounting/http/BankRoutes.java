@@ -2,7 +2,7 @@ package io.amanawa.accounting.http;
 
 import com.fasterxml.jackson.jr.ob.JSON;
 import io.amanawa.accounting.Customer;
-import io.amanawa.accounting.Customers;
+import io.amanawa.accounting.sql.SqlCustomers;
 import io.amanawa.accounting.Transaction;
 import io.undertow.server.HttpServerExchange;
 import io.undertow.util.StatusCodes;
@@ -14,8 +14,8 @@ import java.util.List;
 
 public final class BankRoutes {
 
-    public static void getBalance(HttpServerExchange exchange, JSON json, Customers customers) throws IOException {
-        final Customer customer = customers.customer(extractCustomerId(exchange));
+    public static void getBalance(HttpServerExchange exchange, JSON json, SqlCustomers sqlCustomers) throws IOException {
+        final Customer customer = sqlCustomers.customer(extractCustomerId(exchange));
         if (customer.exists()) {
             exchange.setStatusCode(StatusCodes.OK);
             exchange.getResponseSender().send(json.asString(customer.account().statement()));
@@ -24,14 +24,14 @@ public final class BankRoutes {
         }
     }
 
-    public static void postTransaction(HttpServerExchange exchange, JSON json, Customers customers) throws IOException {
+    public static void postTransaction(HttpServerExchange exchange, JSON json, SqlCustomers sqlCustomers) throws IOException {
         final Transaction transaction = Transaction.fromMap(json.mapFrom(Channels.newInputStream(exchange.getRequestChannel())));
         if (!transaction.valid()) {
             ApiRoutes.unprocessed(exchange);
             return;
         }
         int customerId = extractCustomerId(exchange);
-        final Customer customer = customers.customer(customerId);
+        final Customer customer = sqlCustomers.customer(customerId);
         if (!customer.exists()) {
             ApiRoutes.notFound(exchange);
             return;

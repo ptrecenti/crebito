@@ -1,4 +1,4 @@
-package io.amanawa.accounting.jdbc;
+package io.amanawa.accounting.sql;
 
 import io.amanawa.accounting.*;
 import io.amanawa.jdbc.JdbcSession;
@@ -8,7 +8,7 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Optional;
 
-public final class WithdrawAccount implements Account {
+final class SqlWithdrawAccount implements Account {
 
     private final JdbcSession session;
     private final Transactions transactions;
@@ -16,10 +16,10 @@ public final class WithdrawAccount implements Account {
     private final Account readOnly;
     private final Object lock = new Object();
 
-    public WithdrawAccount(Account readOnly, JdbcSession session, long customerId) {
+    SqlWithdrawAccount(Account readOnly, Transactions transactions, JdbcSession session, long customerId) {
         this.readOnly = readOnly;
         this.session = session;
-        this.transactions = new JdbcTransactions(session, customerId);
+        this.transactions = transactions;
         this.customerId = customerId;
     }
 
@@ -28,10 +28,8 @@ public final class WithdrawAccount implements Account {
         synchronized (lock) {
             try {
                 final Balance balance = balance();
-                boolean processed = false;
                 if (balance.amount() + balance.limit() - amount >= 0) {
-                    final int updateCount = session
-                            .autoCommit(false)
+                    final boolean processed = session
                             .sql("""
                                     update saldos set
                                     valor = ?,
@@ -42,29 +40,15 @@ public final class WithdrawAccount implements Account {
                             .set(balance.version().orElseThrow() + 1)
                             .set(customerId)
                             .set(balance.version().orElseThrow())
-                            .update(Outcome.UPDATE_COUNT);
-                    if (updateCount > 0) {
-                        boolean added = transactions.add(new Transaction(Optional.of(customerId), amount, 'd', description, Optional.of(Instant.now())));
-                        if (added) {
-                            processed = true;
-                        }
+                            .update(Outcome.UPDATE_COUNT) > 0;
+                    if (processed) {
+                        transactions.add(new Transaction(Optional.of(customerId), amount, 'd', description, Optional.of(Instant.now())));
                     }
+                    return processed;
                 }
-                if (processed) {
-                    session.commit();
-                } else {
-                    session.rollback();
-                }
-                return processed;
+                return false;
             } catch (SQLException thrown) {
-                try {
-                    session.rollback();
-                } catch (SQLException nothingToDo) {
-                    throw new IllegalStateException("There is nothing to do here", nothingToDo);
-                }
                 throw new IllegalStateException("Fail to optimistic lock withdraw", thrown);
-            }finally {
-                session.autoCommit(true);
             }
         }
     }
@@ -76,13 +60,17 @@ public final class WithdrawAccount implements Account {
 
     @Override
     public Balance balance() {
-        return this.readOnly.balance();
+        synchronized (lock) {
+            return this.readOnly.balance();
+        }
     }
 
 
     @Override
     public Statement statement() {
-        return this.readOnly.statement();
+        synchronized (lock) {
+            return this.readOnly.statement();
+        }
     }
 
 }

@@ -11,7 +11,7 @@ services:
       - "-server"
     hostname: api01
     environment:
-      - SCALE_FACTOR=1
+      - SCALE_FACTOR=3
       - DB_HOSTNAME=db
       - DB_PORT=5432
       - DB_NAME=rinha

@@ -1,4 +1,4 @@
-package io.amanawa.accounting.jdbc;
+package io.amanawa.accounting.sql;
 
 import io.amanawa.accounting.Transaction;
 import io.amanawa.accounting.Transactions;
@@ -9,10 +9,7 @@ import io.amanawa.jdbc.Outcome;
 import java.sql.SQLException;
 import java.util.Optional;
 
-import static java.lang.System.Logger.Level.ERROR;
-
-public final class JdbcTransactions implements Transactions {
-    private static final System.Logger log = System.getLogger(JdbcTransactions.class.getName());
+public final class SqlTransactions implements Transactions {
     private final JdbcSession session;
     private final String sortBy;
     private final String orderBy;
@@ -21,11 +18,11 @@ public final class JdbcTransactions implements Transactions {
     private final Object lock = new Object();
 
 
-    JdbcTransactions(JdbcSession session, long customerId) {
+    SqlTransactions(JdbcSession session, long customerId) {
         this(session, "realizada_em", "desc", 10, customerId);
     }
 
-    private JdbcTransactions(JdbcSession session, String sortBy, String orderBy, int limit, long customerId) {
+    private SqlTransactions(JdbcSession session, String sortBy, String orderBy, int limit, long customerId) {
         this.session = session;
         this.sortBy = sortBy;
         this.orderBy = orderBy;
@@ -34,22 +31,19 @@ public final class JdbcTransactions implements Transactions {
     }
 
     @Override
-    public boolean add(Transaction transaction) {
+    public void add(Transaction transaction) {
         synchronized (lock) {
             try {
-                int updates = session
-                        .sql("""
+                session.sql("""
                                 insert into transacoes (cliente_id,valor,tipo,descricao)
                                 values (?,?,?,?)""")
                         .set(transaction.customerId().orElseThrow())
                         .set(transaction.amount())
                         .set(transaction.operation())
                         .set(transaction.description())
-                        .update(Outcome.UPDATE_COUNT);
-                return updates > 0;
+                        .insert(Outcome.VOID);
             } catch (SQLException thrown) {
-                log.log(ERROR, "Fail to add a transactions", thrown);
-                return false;
+                throw new IllegalStateException("Fail to add a transactions", thrown);
             }
         }
     }

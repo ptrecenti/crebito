@@ -1,24 +1,24 @@
-package io.amanawa.accounting.jdbc;
+package io.amanawa.accounting.sql;
 
 import io.amanawa.accounting.Account;
 import io.amanawa.accounting.Customer;
+import io.amanawa.accounting.Transactions;
 import io.amanawa.jdbc.JdbcSession;
 
-import javax.sql.DataSource;
 import java.sql.SQLException;
 import java.util.Objects;
 
-public final class JdbcCustomer implements Customer {
+final class SqlCustomer implements Customer {
 
     private final long id;
     private final Account account;
     private final JdbcSession session;
     private final Object lock = new Object();
 
-    public JdbcCustomer(DataSource source, long id) {
+    public SqlCustomer(JdbcSession session, Transactions transactions, long id) {
         this.id = id;
-        this.account = new ComposedAccount(source, id);
-        this.session = new JdbcSession(source);
+        this.account = new SqlAccount(session, transactions, id);
+        this.session = session;
     }
 
     @Override
@@ -47,7 +47,7 @@ public final class JdbcCustomer implements Customer {
     public boolean equals(Object o) {
         if (this == o) return true;
         if (o == null || getClass() != o.getClass()) return false;
-        JdbcCustomer that = (JdbcCustomer) o;
+        SqlCustomer that = (SqlCustomer) o;
         return id == that.id;
     }
 
