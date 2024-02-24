@@ -11,17 +11,19 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Optional;
 
-final class SqlWithdrawAccount implements Account {
+final class SqlOptimistWithdrawAccount implements Account {
 
-    private static final System.Logger logger = System.getLogger(SqlWithdrawAccount.class.getName());
+    private static final System.Logger logger = System.getLogger(SqlOptimistWithdrawAccount.class.getName());
     private final JdbcSession session;
     private final Transactions transactions;
     private final long customerId;
     private final Account readOnly;
+    private final Account pessimist;
     private final Object lock = new Object();
 
-    SqlWithdrawAccount(Account readOnly, Transactions transactions, JdbcSession session, long customerId) {
+    SqlOptimistWithdrawAccount(Account readOnly, Account pessimist, Transactions transactions, JdbcSession session, long customerId) {
         this.readOnly = readOnly;
+        this.pessimist = pessimist;
         this.session = session;
         this.transactions = transactions;
         this.customerId = customerId;
@@ -49,15 +51,16 @@ final class SqlWithdrawAccount implements Account {
                             .set(actualVersion)
                             .update(Outcome.UPDATE_COUNT) > 0;
                     if (processed) {
-                        transactions.add(new Transaction(Optional.of(customerId), amount, 'd', description, Optional.of(Instant.now()), Optional.of(newVersion)));
+                        transactions.add(new Transaction(Optional.of(customerId), amount, 'd', description, Optional.of(Instant.now())));
                         return Optional.of(new Balance(
                                 newBalance,
                                 initial.limit(),
                                 initial.when(),
                                 Optional.of(newVersion)
                         ));
+                    } else {
+                        return pessimist.withdraw(amount, description);
                     }
-
                 }
                 return Optional.empty();
             } catch (SQLException thrown) {

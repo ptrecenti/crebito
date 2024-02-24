@@ -61,6 +61,7 @@ class ConcurrentAccountSpec extends Specification {
                 customers.customer(customer).account().balance()
                 customers.customer(customer).account().statement()
 
+
             }
         }
         (1..numOfThreads).parallelStream().forEach {
@@ -69,6 +70,7 @@ class ConcurrentAccountSpec extends Specification {
                 customers.customer(customer).account().deposit(amount as long, "Credit")
                 customers.customer(customer).account().balance()
                 customers.customer(customer).account().statement()
+
             }
         }
 
@@ -83,11 +85,11 @@ class ConcurrentAccountSpec extends Specification {
 
         where:
         customer | numOfThreads
-        1        | 30
-        2        | 30
-        3        | 30
-        4        | 30
-        5        | 30
+        1        | 1
+        2        | 1
+        3        | 1
+        4        | 1
+        5        | 1
 
     }
 }

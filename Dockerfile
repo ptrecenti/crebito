@@ -8,11 +8,11 @@ RUN microdnf install findutils && \
 FROM gcr.io/distroless/cc
 COPY --from=builder /home/gradle/project/build/native/nativeCompile/crebito /crebito
 EXPOSE 8080
-ENV SCALE_FACTOR="1" \
-    DB_USER="rinha" \
-    DB_PASS="rinha" \
-    DB_NAME="rinha" \
-    DB_HOSTNAME="db" \
-    DB_PORT="5432" \
-    DB_POOL_PLUS="1"
-ENTRYPOINT ["/crebito","-Xms200m","-Xmx200m"]
+ENV SCALE_FACTOR \
+    DB_USER \
+    DB_PASS \
+    DB_NAME \
+    DB_HOSTNAME \
+    DB_PORT \
+    DB_POOL
+CMD ["/crebito","-Xms64m","-Xmx64m","-ea","-server"]

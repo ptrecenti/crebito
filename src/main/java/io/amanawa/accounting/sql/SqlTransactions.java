@@ -38,13 +38,12 @@ public final class SqlTransactions implements Transactions {
         synchronized (lock) {
             try {
                 session.sql("""
-                                insert into transacoes (cliente_id,valor,tipo,descricao,versao)
-                                values (?,?,?,?,?)""")
+                                insert into transacoes (cliente_id,valor,tipo,descricao)
+                                values (?,?,?,?)""")
                         .set(transaction.customerId().orElseThrow())
                         .set(transaction.amount())
                         .set(transaction.operation())
                         .set(transaction.description())
-                        .set(transaction.version().orElseThrow())
                         .insert(Outcome.VOID);
             } catch (SQLException thrown) {
                 logger.log(System.Logger.Level.ERROR, "Fail to add a transactions", thrown);
@@ -70,8 +69,7 @@ public final class SqlTransactions implements Transactions {
                                 rset.getLong(2),
                                 rset.getString(3).charAt(0),
                                 rset.getString(4),
-                                Optional.of(rset.getTimestamp(5).toInstant()),
-                                Optional.empty())
+                                Optional.of(rset.getTimestamp(5).toInstant()))
                         ));
             } catch (SQLException thrown) {
                 logger.log(System.Logger.Level.WARNING, "Fail to iterate on transactions", thrown);

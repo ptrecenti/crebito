@@ -25,8 +25,7 @@ public record Transaction(
         char operation,
         @JsonProperty("descricao")
         CharSequence description,
-        Optional<Instant> when,
-        Optional<Integer> version) {
+        Optional<Instant> when) {
     public Transaction(
             long customerId,
             @JsonProperty("valor")
@@ -35,7 +34,7 @@ public record Transaction(
             char operation,
             @JsonProperty("descricao")
             CharSequence description) {
-        this(Optional.of(customerId), amount, operation, description, Optional.empty(), Optional.empty());
+        this(Optional.of(customerId), amount, operation, description, Optional.empty());
     }
 
     public static Transaction fromMap(long customerId, Map<String, Object> map) {

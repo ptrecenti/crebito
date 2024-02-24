@@ -1,15 +1,9 @@
 package io.amanawa.accounting;
 
 import java.util.Optional;
-import java.util.concurrent.*;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import static java.lang.System.Logger.Level.WARNING;
 
 
 public final class Bank {
-
-    private static final System.Logger logger = System.getLogger(Bank.class.getName());
     private final Customers customers;
 
     public Bank(Customers customers) {

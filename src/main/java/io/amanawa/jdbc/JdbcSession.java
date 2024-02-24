@@ -101,12 +101,11 @@ public final class JdbcSession {
         }
     }
 
-    public <T> JdbcSession updateConcurrent(final Outcome<T> outcome) throws SQLException {
+    public <T> T updateConcurrent(final Outcome<T> outcome) throws SQLException {
         synchronized (lock) {
-            this.run(outcome,
+            return this.run(outcome,
                     new Connect.ConcurUpdateTable(this.query),
                     Request.RUN_QUERY);
-            return this;
         }
     }
 

@@ -13,7 +13,6 @@ import io.undertow.Handlers;
 import io.undertow.Undertow;
 import io.undertow.UndertowOptions;
 import io.undertow.server.RoutingHandler;
-import io.undertow.server.handlers.RequestLimit;
 
 import static java.lang.System.Logger.Level.INFO;
 
@@ -22,12 +21,11 @@ public class Crebito {
     private static final System.Logger log = System.getLogger(Crebito.class.getName());
 
     public static void main(String[] args) {
-        int scale = Integer.parseInt(System.getenv().getOrDefault("SCALE_FACTOR", "1"));
+        int scale = Integer.parseInt(System.getenv().getOrDefault("SCALE_FACTOR", "30"));
         int ioThreads = Math.max(Runtime.getRuntime().availableProcessors(), 2) * scale;
         int workerThreads = ioThreads * 8;
-        int dbPool = workerThreads + Integer.parseInt(System.getenv().getOrDefault("DB_POOL_PLUS", "1"));
-        int minIdle = dbPool - 5;
-        int maxPostConcurrentTransactions = Integer.parseInt(System.getenv().getOrDefault("MAX_POST", "100"));
+        int dbPool = Integer.parseInt(System.getenv().getOrDefault("DB_POOL", "" + Math.max(ioThreads / 3, 2)));
+        int minIdle = Math.max(dbPool / 6, 1);
         final HikariConfig config = new HikariConfig();
         config.setDataSourceClassName("org.postgresql.ds.PGSimpleDataSource");
         config.setUsername(System.getenv().getOrDefault("DB_USER", "rinha"));
@@ -46,8 +44,8 @@ public class Crebito {
         final Customers customers = new SqlCustomers(source);
         final Bank bank = new Bank(customers);
         final RoutingHandler routes = Handlers.routing()
-                .post("/clientes/{id}/transacoes", Handlers.requestLimitingHandler(new RequestLimit(maxPostConcurrentTransactions),new TransactionHttpHandler(json, bank)))
-                .get("/clientes/{id}/extrato", Handlers.disableCache(new StatementHttpHandler(json, customers)));
+                .post("/clientes/{id}/transacoes", new TransactionHttpHandler(json, bank))
+                .get("/clientes/{id}/extrato", new StatementHttpHandler(json, customers));
 
         Undertow.builder()
                 .addHttpListener(8080, "0.0.0.0")

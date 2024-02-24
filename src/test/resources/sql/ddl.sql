@@ -12,12 +12,9 @@ CREATE TABLE transacoes
     valor        INTEGER     NOT NULL,
     tipo         CHAR(1)     NOT NULL,
     descricao    VARCHAR(10) NOT NULL,
-    versao       INTEGER     NOT NULL,
     realizada_em TIMESTAMP   NOT NULL DEFAULT NOW(),
     CONSTRAINT fk_clientes_transacoes_id
-        FOREIGN KEY (cliente_id) REFERENCES clientes (id),
-    CONSTRAINT u_cliente_valor_tipo_versao
-        UNIQUE  (cliente_id,valor,tipo,versao)
+        FOREIGN KEY (cliente_id) REFERENCES clientes (id)
 );
 
 CREATE INDEX i_cliente_realizada_em

@@ -19,10 +19,10 @@ final class SqlAccount implements Account {
         this(new SqlReadOnlyAccount(session, transactions, customerId), transactions, session, customerId);
     }
 
-    private SqlAccount(Account readOnly, Transactions transaction, JdbcSession session, long customerId) {
+    private SqlAccount(Account readOnly, Transactions transactions, JdbcSession session, long customerId) {
         this(readOnly,
-                new SqlWithdrawAccount(readOnly, transaction, session, customerId),
-                new RetryDepositAccount(new SqlDepositAccount(readOnly, transaction, session, customerId)));
+                new SqlOptimistWithdrawAccount(readOnly, new SqlPesimistWithdrawAccount(transactions, session, customerId), transactions, session, customerId),
+                new SqlOptimistDepositAccount(readOnly, new SqlPesimistDepositAccount(transactions, session, customerId), transactions, session, customerId));
     }
 
     private SqlAccount(Account readOnly, Account withdraw, Account deposit) {

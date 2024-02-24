@@ -11,17 +11,19 @@ import java.sql.SQLException;
 import java.time.Instant;
 import java.util.Optional;
 
-final class SqlDepositAccount implements Account {
+final class SqlOptimistDepositAccount implements Account {
 
-    private static final System.Logger logger = System.getLogger(SqlDepositAccount.class.getName());
+    private static final System.Logger logger = System.getLogger(SqlOptimistDepositAccount.class.getName());
     private final JdbcSession session;
     private final Transactions transactions;
     private final Account readOnly;
+    private final Account pessimist;
     private final long customerId;
     private final Object lock = new Object();
 
-    SqlDepositAccount(Account readOnly, Transactions transactions, JdbcSession session, long customerId) {
+    SqlOptimistDepositAccount(Account readOnly, Account pessimist, Transactions transactions, JdbcSession session, long customerId) {
         this.readOnly = readOnly;
+        this.pessimist = pessimist;
         this.session = session;
         this.transactions = transactions;
         this.customerId = customerId;
@@ -48,15 +50,16 @@ final class SqlDepositAccount implements Account {
                         .set(actualVersion)
                         .update(Outcome.UPDATE_COUNT) > 0;
                 if (processed) {
-                    transactions.add(new Transaction(Optional.of(customerId), amount, 'c', description, Optional.of(Instant.now()), Optional.of(newVersion)));
+                    transactions.add(new Transaction(Optional.of(customerId), amount, 'c', description, Optional.of(Instant.now())));
                     return Optional.of(new Balance(
                             newBalance,
                             initial.limit(),
                             initial.when(),
                             Optional.of(newVersion)
                     ));
+                } else {
+                    return pessimist.deposit(amount, description);
                 }
-                return Optional.empty();
             } catch (SQLException thrown) {
                 logger.log(System.Logger.Level.WARNING, "Fail to optimistic lock deposit", thrown);
                 return Optional.empty();
