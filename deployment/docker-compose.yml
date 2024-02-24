@@ -17,6 +17,7 @@ services:
       - DB_NAME=rinha
       - DB_USER=rinha
       - DB_PASS=rinha
+      - DB_POOL=10
     depends_on:
       db:
         condition: service_healthy
